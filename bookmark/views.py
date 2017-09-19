@@ -1,7 +1,9 @@
-from django.shortcuts import render
-from django.views.generic import ListView, DetailView, CreateView, UpdateView
+from django.shortcuts import render, redirect
+from django.urls import reverse_lazy
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
 from .models import Bookmark
+from django.contrib.auth.mixins import LoginRequiredMixin
 # Create your views here.
 
 class BookmarkListV(ListView):
@@ -10,10 +12,25 @@ class BookmarkListV(ListView):
 class BookmarkDetailV(DetailView):
     model = Bookmark
 
-class BookmarkCreateV(CreateView):
+class BookmarkCreateV(LoginRequiredMixin, CreateView):
     model = Bookmark
-    fields = ['title', "url"]
+    fields = ['title', 'url']
+    success_url = reverse_lazy('bookmark:index')
 
-class BookmarkUpdateV(UpdateView):
+    def form_valid(self, form):
+        form.instance.author_id = self.request.user.id
+
+        if form.is_valid:
+            form.instance.save()
+            return redirect('/bookmark/')
+        else:
+            return self.render_to_response({'form':form})
+
+class BookmarkUpdateV(LoginRequiredMixin, UpdateView):
     model = Bookmark
-    fields = ['title', "url"]
+    fields = ['title', 'url']
+    success_url = reverse_lazy('bookmark:index')
+
+class BookmarkDeleteV(LoginRequiredMixin, DeleteView):
+    model = Bookmark
+    success_url = reverse_lazy('bookmark:index')
